@@ -4,6 +4,7 @@ package log
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"time"
 )
@@ -52,4 +53,36 @@ func (r *Record) Log(description string, parts ...interface{}) {
 // NewRecord creates a Record with a name
 func NewRecord(name string) *Record {
 	return &Record{time.Now(), name, stdOut, errOut}
+}
+
+// L log request information and duration
+func L(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cr := codeRecorder{w, http.StatusOK}
+		rf := NewRecord("request_finished")
+		re := NewRecord("request_error")
+		h.ServeHTTP(&cr, r)
+		desc := fmt.Sprintf("code: %d, path: %s, params: %s", cr.code, r.URL.Path, r.URL.RawQuery)
+		if cr.code >= http.StatusBadRequest {
+			re.Log(desc)
+		} else {
+			rf.Log(desc)
+		}
+	})
+}
+
+type codeRecorder struct {
+	rw   http.ResponseWriter
+	code int
+}
+
+func (cr *codeRecorder) Header() http.Header {
+	return cr.rw.Header()
+}
+func (cr *codeRecorder) Write(p []byte) (int, error) {
+	return cr.rw.Write(p)
+}
+func (cr *codeRecorder) WriteHeader(code int) {
+	cr.code = code
+	cr.rw.WriteHeader(code)
 }
