@@ -1,6 +1,9 @@
 Log 
 ===
 
+Does much less than the average logger, does more than we want from the average logger.  
+Aside from the basic `Log` and `Error`, this logging utility includes a struct used to meassure times between calls and provides a usefull `http.Handler` to be used as a middleware to meassure the duration of requests.
+
 Install with `dep ensure -add github.com/blacklane/bl-log`.
 
 Usage
