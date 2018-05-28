@@ -18,15 +18,15 @@ var Err io.Writer = os.Stderr
 // Log writes a JSON message to the configured standard output
 func Log(name, description string, parts ...interface{}) {
 	m := fmt.Sprintf(description, parts...)
-	fmt.Fprintf(Out, `{"name": %q, "desc": %q, "timestamp": %q}`, name, m, time.Now().Format(time.RFC3339))
-	os.Stdout.Write([]byte{'\n'})
+	fmt.Fprintf(Out, `{"name": %q, "desc": %q, "timestamp": %q}
+`, name, m, time.Now().Format(time.RFC3339))
 }
 
 // Error writes an error as JSON to the configured error output
 func Error(err error) {
 	if err != nil {
-		fmt.Fprintf(Err, `{"error": %q, "timestamp": %q}`, err.Error(), time.Now().Format(time.RFC3339))
-		Err.Write([]byte{'\n'})
+		fmt.Fprintf(Err, `{"error": %q, "timestamp": %q}
+`, err.Error(), time.Now().Format(time.RFC3339))
 	}
 }
 
@@ -42,8 +42,8 @@ type Record struct {
 func (r *Record) Log(description string, parts ...interface{}) {
 	d := fmt.Sprintf(description, parts...)
 	dur := time.Since(r.start) / time.Millisecond
-	fmt.Fprintf(r.out, `{"name": %q, "desc": %q, "duration": %d, "timestamp": %q}`, r.name, d, dur, time.Now().Format(time.RFC3339))
-	r.out.Write([]byte{'\n'})
+	fmt.Fprintf(r.out, `{"name": %q, "desc": %q, "duration": %d, "timestamp": %q}
+`, r.name, d, dur, time.Now().Format(time.RFC3339))
 }
 
 // NewRecord creates a Record with a name
