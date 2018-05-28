@@ -9,28 +9,24 @@ import (
 	"time"
 )
 
-var stdOut io.Writer = os.Stdout
-var errOut io.Writer = os.Stderr
+// Out is the default output used to log messages
+var Out io.Writer = os.Stdout
 
-func SetOut(o io.Writer) {
-	stdOut = o
-}
-func SetErr(o io.Writer) {
-	errOut = o
-}
+// Err is the writer used to log errors with Error
+var Err io.Writer = os.Stderr
 
 // Log writes a JSON message to the configured standard output
 func Log(name, description string, parts ...interface{}) {
 	m := fmt.Sprintf(description, parts...)
-	fmt.Fprintf(stdOut, `{"name": %q, "desc": %q, "timestamp": %q}`, name, m, time.Now().Format(time.RFC3339))
+	fmt.Fprintf(Out, `{"name": %q, "desc": %q, "timestamp": %q}`, name, m, time.Now().Format(time.RFC3339))
 	os.Stdout.Write([]byte{'\n'})
 }
 
 // Error writes an error as JSON to the configured error output
 func Error(err error) {
 	if err != nil {
-		fmt.Fprintf(errOut, `{"error": %q, "timestamp": %q}`, err.Error(), time.Now().Format(time.RFC3339))
-		errOut.Write([]byte{'\n'})
+		fmt.Fprintf(Err, `{"error": %q, "timestamp": %q}`, err.Error(), time.Now().Format(time.RFC3339))
+		Err.Write([]byte{'\n'})
 	}
 }
 
@@ -52,7 +48,7 @@ func (r *Record) Log(description string, parts ...interface{}) {
 
 // NewRecord creates a Record with a name
 func NewRecord(name string) *Record {
-	return &Record{time.Now(), name, stdOut, errOut}
+	return &Record{time.Now(), name, Out, Err}
 }
 
 // L log request information and duration
@@ -85,4 +81,19 @@ func (cr *codeRecorder) Write(p []byte) (int, error) {
 func (cr *codeRecorder) WriteHeader(code int) {
 	cr.code = code
 	cr.rw.WriteHeader(code)
+}
+
+// Silence sets the normal and error outputs to the Noop writer so nothing gets logged, useful for use in tests.
+func Silence() {
+	Out = Noop
+	Err = Noop
+}
+
+// Noop is an io.Writer which does nothing
+var Noop = &dummyWriter{}
+
+type dummyWriter struct{}
+
+func (w *dummyWriter) Write(p []byte) (int, error) {
+	return len(p), nil
 }

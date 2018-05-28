@@ -13,7 +13,7 @@ import (
 
 func TestRecord(t *testing.T) {
 	out := bytes.NewBufferString("")
-	log.SetOut(out)
+	log.Out = out
 
 	t.Run("duration in milliseconds", func(t *testing.T) {
 		out.Reset()
@@ -52,7 +52,7 @@ func TestRecord(t *testing.T) {
 
 func TestLog(t *testing.T) {
 	out := bytes.NewBufferString("")
-	log.SetOut(out)
+	log.Out = out
 
 	t.Run("timestamp in ISO8601", func(t *testing.T) {
 		out.Reset()
@@ -71,7 +71,7 @@ func TestLog(t *testing.T) {
 }
 func TestError(t *testing.T) {
 	out := bytes.NewBufferString("")
-	log.SetErr(out)
+	log.Err = out
 
 	t.Run("timestamp in ISO8601", func(t *testing.T) {
 		out.Reset()
@@ -101,8 +101,8 @@ func (m *mockResponseWriter) WriteHeader(int) {}
 
 func TestRequest(t *testing.T) {
 	out := bytes.NewBufferString("")
-	log.SetOut(out)
-	log.SetErr(out)
+	log.Out = out
+	log.Err = out
 
 	t.Run("event name", func(t *testing.T) {
 		out.Reset()
@@ -167,4 +167,23 @@ func TestRequest(t *testing.T) {
 			t.Errorf("Expected %q, got %q", exp, got)
 		}
 	})
+}
+
+func TestSilence(t *testing.T) {
+	out := bytes.NewBufferString("")
+	err := bytes.NewBufferString("")
+	log.Out = out
+	log.Err = err
+
+	log.Silence()
+
+	log.Log("test_out", "foo")
+	log.Error(errors.New("foo"))
+
+	if out.String() != "" {
+		t.Errorf("Out should be empty, got: %s", out)
+	}
+	if err.String() != "" {
+		t.Errorf("Err should be empty, got: %s", err)
+	}
 }
