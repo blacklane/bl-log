@@ -17,8 +17,13 @@ var Err io.Writer = os.Stderr
 
 // Log writes a JSON message to the configured standard output
 func Log(name, desc string) {
+	At(name, time.Now(), desc)
+}
+
+// At logs data at the specified time
+func At(name string, t time.Time, desc string) {
 	fmt.Fprintf(Out, `{"name": %q, "desc": %q, "timestamp": %q}
-`, name, desc, formattedNow())
+`, name, desc, format(t))
 }
 
 // Error writes an error as JSON to the configured error output
@@ -107,6 +112,10 @@ func msSince(t time.Time) time.Duration {
 	return time.Since(t) / time.Millisecond
 }
 
+func format(t time.Time) string {
+	return t.Format(time.RFC3339)
+}
+
 func formattedNow() string {
-	return time.Now().Format(time.RFC3339)
+	return format(time.Now())
 }
