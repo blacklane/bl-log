@@ -48,6 +48,25 @@ func TestRecord(t *testing.T) {
 			t.Error(err)
 		}
 	})
+
+	t.Run("response", func(t *testing.T) {
+		out.Reset()
+		r := log.NewRecord("test_response")
+
+		req, _ := http.NewRequest("GET", "/foo", nil)
+		r.Response(&http.Response{StatusCode: 200, Request: req})
+
+		rec := struct {
+			Code int    `json:"code"`
+			URI  string `json:"uri"`
+		}{}
+		json.Unmarshal(out.Bytes(), &rec)
+
+		code, path := 200, "/foo"
+		if rec.Code != code || rec.URI != path {
+			t.Errorf("Expected {%d %s}, got %v", code, path, rec)
+		}
+	})
 }
 
 func TestLog(t *testing.T) {

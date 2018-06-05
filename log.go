@@ -45,6 +45,11 @@ func (r *Record) Log(desc string) {
 	Duration(r.name, msSince(r.start), desc)
 }
 
+// Response logs an http.Response using the record information
+func (r *Record) Response(res *http.Response) {
+	Response(r.name, res, msSince(r.start))
+}
+
 // NewRecord creates a Record with a name
 func NewRecord(name string) *Record {
 	return &Record{time.Now(), name}
