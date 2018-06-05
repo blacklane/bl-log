@@ -19,14 +19,14 @@ var Err io.Writer = os.Stderr
 func Log(name, description string, parts ...interface{}) {
 	m := fmt.Sprintf(description, parts...)
 	fmt.Fprintf(Out, `{"name": %q, "desc": %q, "timestamp": %q}
-`, name, m, time.Now().Format(time.RFC3339))
+`, name, m, formattedNow())
 }
 
 // Error writes an error as JSON to the configured error output
 func Error(err error) {
 	if err != nil {
 		fmt.Fprintf(Err, `{"error": %q, "timestamp": %q}
-`, err.Error(), time.Now().Format(time.RFC3339))
+`, err.Error(), formattedNow())
 	}
 }
 
@@ -41,9 +41,8 @@ type Record struct {
 // Log prints a simple json structure to the stdout with duration information since the record was created
 func (r *Record) Log(description string, parts ...interface{}) {
 	d := fmt.Sprintf(description, parts...)
-	dur := time.Since(r.start) / time.Millisecond
 	fmt.Fprintf(r.out, `{"name": %q, "desc": %q, "duration": %d, "timestamp": %q}
-`, r.name, d, dur, time.Now().Format(time.RFC3339))
+`, r.name, d, msSince(r.start), formattedNow())
 }
 
 // NewRecord creates a Record with a name
@@ -51,18 +50,24 @@ func NewRecord(name string) *Record {
 	return &Record{time.Now(), name, Out, Err}
 }
 
+// Response logs relevant information about the request/response
+func Response(name string, res *http.Response, duration time.Duration) {
+	req := res.Request
+	fmt.Fprintf(Out, `{"name": %q, "code": %d, "uri": %q, "params": %q, "duration": %d, "timestamp": %q}
+`, name, res.StatusCode, req.URL.Path, req.URL.RawQuery, duration, formattedNow())
+}
+
 // L log request information and duration
 func L(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cr := codeRecorder{w, http.StatusOK}
-		rf := NewRecord("request_finished")
-		re := NewRecord("request_error")
+		start := time.Now()
 		h.ServeHTTP(&cr, r)
-		desc := fmt.Sprintf("code: %d, path: %s, params: %s", cr.code, r.URL.Path, r.URL.RawQuery)
-		if cr.code >= http.StatusBadRequest {
-			re.Log(desc)
+		res := &http.Response{StatusCode: cr.code, Request: r}
+		if res.StatusCode >= http.StatusBadRequest {
+			Response("request_error", res, msSince(start))
 		} else {
-			rf.Log(desc)
+			Response("request_finished", res, msSince(start))
 		}
 	})
 }
@@ -96,4 +101,12 @@ type dummyWriter struct{}
 
 func (w *dummyWriter) Write(p []byte) (int, error) {
 	return len(p), nil
+}
+
+func msSince(t time.Time) time.Duration {
+	return time.Since(t) / time.Millisecond
+}
+
+func formattedNow() string {
+	return time.Now().Format(time.RFC3339)
 }

@@ -122,21 +122,22 @@ func TestRequest(t *testing.T) {
 		}
 	})
 
-	t.Run("description", func(t *testing.T) {
+	t.Run("request data", func(t *testing.T) {
 		out.Reset()
 		h := log.L(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 		req, _ := http.NewRequest("GET", "/foo?bar=123", nil)
 		h.ServeHTTP(new(mockResponseWriter), req)
 
 		rec := struct {
-			Desc string `json:"desc"`
+			Code   int    `json:"code"`
+			URI    string `json:"uri"`
+			Params string `json:"params"`
 		}{}
 		json.Unmarshal(out.Bytes(), &rec)
 
-		exp := "code: 200, path: /foo, params: bar=123"
-		got := rec.Desc
-		if exp != got {
-			t.Errorf("Expected %q, got %q", exp, got)
+		code, URI, params := 200, "/foo", "bar=123"
+		if rec.Code != code || rec.URI != URI || rec.Params != params {
+			t.Errorf("Expected %d %s %s, got %v", code, URI, params, rec)
 		}
 	})
 
@@ -151,8 +152,10 @@ func TestRequest(t *testing.T) {
 		h.ServeHTTP(new(mockResponseWriter), req)
 
 		rec := struct {
-			Name string `json:"name"`
-			Desc string `json:"desc"`
+			Name   string `json:"name"`
+			Code   int    `json:"code"`
+			URI    string `json:"uri"`
+			Params string `json:"params"`
 		}{}
 		json.Unmarshal(out.Bytes(), &rec)
 
@@ -161,10 +164,9 @@ func TestRequest(t *testing.T) {
 		if exp != got {
 			t.Errorf("Expected %q, got %q", exp, got)
 		}
-		exp = "code: 400, path: /foo, params: bar=123"
-		got = rec.Desc
-		if exp != got {
-			t.Errorf("Expected %q, got %q", exp, got)
+		code, URI, params := 400, "/foo", "bar=123"
+		if rec.Code != code || rec.URI != URI || rec.Params != params {
+			t.Errorf("Expected %d %s %s, got %v", code, URI, params, rec)
 		}
 	})
 }
